@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AR Menu Demo – Burger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<style>
+  :root { --bg:#f2f5f3; --ink:#1b2a2f; --muted:#5d6e72; --card:#fff; --line:#d6dfdb; --accent:#6b2d5c; --accent-ink:#fff; --chip:#e3ebe7;
+    --head:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif; --body:"DM Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#162226; --ink:#eaf1ee; --muted:#9db0b3; --card:#1f3036; --line:#2f434a; --accent:#d9a1ca; --accent-ink:#2a1024; --chip:#2a3d44; } }
+  * { box-sizing:border-box; } html { color-scheme:light dark; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); line-height:1.5; }
+  .wrap { max-width:640px; margin:0 auto; padding:28px 18px 56px; }
+  h1 { font-family:var(--head); font-weight:800; font-size:clamp(2rem,7vw,2.8rem); margin:0 0 6px; letter-spacing:-.02em; }
+  header p { margin:0; color:var(--muted); }
+  .tag { display:inline-block; margin-top:14px; padding:6px 12px; border-radius:999px; background:var(--chip); font-size:.85rem; }
+  .lang { display:flex; gap:6px; margin-top:16px; }
+  .lang button { border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:8px; padding:6px 12px; font:500 .85rem var(--body); cursor:pointer; }
+  .lang button[aria-pressed="true"] { background:var(--ink); color:var(--bg); }
+  .dish { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; margin-top:18px; }
+  model-viewer { width:100%; height:300px; background:var(--chip); border-radius:12px; --poster-color:transparent; }
+  .row { display:flex; justify-content:space-between; gap:10px; align-items:baseline; margin-top:12px; }
+  .name { font-family:var(--head); font-weight:600; font-size:1.2rem; margin:0; }
+  .price { font-weight:500; white-space:nowrap; }
+  .desc { margin:4px 0 0; color:var(--muted); font-size:.95rem; }
+  .allergens { margin-top:6px; font-size:.8rem; color:var(--muted); }
+  .ar { display:block; width:100%; margin-top:12px; border:0; border-radius:10px; padding:13px; background:var(--accent); color:var(--accent-ink); font:500 1rem var(--body); cursor:pointer; }
+  .ar[disabled] { background:var(--chip); color:var(--muted); cursor:default; }
+  .status { margin:8px 0 0; font-size:.85rem; color:var(--muted); }
+  .ar:focus-visible, .lang button:focus-visible { outline:3px solid var(--ink); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Demo Café</h1>
+    <p id="intro"></p>
+    <span class="tag" id="tag"></span>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-l="en" aria-pressed="true">English</button>
+      <button data-l="de" aria-pressed="false">Deutsch</button>
+    </div>
+  </header>
+  <main id="menu"></main>
+</div>
+
+<script>
+/* ===== EDIT ONLY THIS LIST =====
+   1. Put your GLB files in a "models" folder next to this file.
+   2. Change each glb value to your file, e.g. "models/burger.glb".
+   3. Add or remove dishes by copying or deleting one { ... } block.
+   4. "allergens" is optional: delete that line if you don't want it shown.
+   The sample astronaut model below is a placeholder so the page works before you add your own. */
+const SAMPLE = "https://modelviewer.dev/shared-assets/models/Astronaut.glb";
+
+const DISHES = [
+  { glb: "burger.glb", price: "€12.90",
+    name: { en: "House burger", de: "Haus-Burger" },
+    desc: { en: "Beef patty, cheddar, brioche bun.", de: "Rindfleisch, Cheddar, Brioche." } }
+];
+
+const TEXT = {
+  en: { intro: "Tap View in AR under any dish to see it on your table.", tag: "Demo menu",
+        ar: "View in AR", noar: "AR works on phones. Open this page on your phone.", allergens: "Allergens" },
+  de: { intro: "Tippen Sie unter einem Gericht auf In AR ansehen, um es auf Ihrem Tisch zu sehen.", tag: "Demo-Menü",
+        ar: "In AR ansehen", noar: "AR funktioniert auf dem Handy. Öffnen Sie diese Seite auf Ihrem Handy.", allergens: "Allergene" }
+};
+
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let lang = "en";
+
+function render() {
+  const t = TEXT[lang];
+  document.documentElement.lang = lang;
+  document.getElementById("intro").textContent = t.intro;
+  document.getElementById("tag").textContent = t.tag;
+  document.getElementById("menu").innerHTML = DISHES.map((d, i) => `
+    <article class="dish">
+      <model-viewer id="mv${i}" src="${d.glb}" alt="3D model of ${d.name[lang]}"
+        ar ar-modes="webxr scene-viewer quick-look" camera-controls ${reduce ? "" : "auto-rotate"}
+        shadow-intensity="1" touch-action="pan-y"></model-viewer>
+      <div class="row"><h2 class="name">${d.name[lang]}</h2><span class="price">${d.price}</span></div>
+      <p class="desc">${d.desc[lang]}</p>
+      ${d.allergens ? `<div class="allergens">${t.allergens}: ${d.allergens}</div>` : ""}
+      <button class="ar" id="ar${i}" data-i="${i}">${t.ar}</button>
+      <p class="status" id="st${i}" role="status"></p>
+    </article>`).join("");
+
+  DISHES.forEach((_, i) => {
+    const mv = document.getElementById("mv" + i), btn = document.getElementById("ar" + i);
+    const st = document.getElementById("st" + i);
+    mv.addEventListener("error", () => { st.textContent = "Model file failed to load. Check the file name."; });
+    mv.addEventListener("ar-status", e => {
+      if (e.detail.status === "failed") st.textContent = "AR failed to start on this phone or with this model.";
+    });
+    btn.addEventListener("click", () => {
+      if (mv.canActivateAR) mv.activateAR();
+      else { btn.textContent = t.noar; btn.disabled = true; }
+    });
+  });
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.l === lang)));
+}
+
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => { lang = b.dataset.l; render(); }));
+render();
+</script>
+</body>
+</html>
